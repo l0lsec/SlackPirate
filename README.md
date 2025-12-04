@@ -38,12 +38,33 @@ The Slack web application uses a number of cookies - the one of special interest
 
 The Slack API token is a per-workspace token. One token cannot (as far as I know) access other workspaces in the same way the `d` cookie above allows access to all Workspaces.
 
-For the tool to search for and extract information, you will need to provide it an API token in addition to a Slack Cookie. This token is included within the form data of requests sent to the Slack API from the client. So to use SlackPirate, you will need to provide the following information:
+### Token Types
+
+SlackPirate supports two types of tokens:
+
+| Token Type | Format | Cookie Required | Search APIs |
+|------------|--------|-----------------|-------------|
+| **Bot Token** | `xoxb-...` | ❌ No | ❌ Limited (no `search:read` scope) |
+| **Client Token** | `xoxc-...` | ✅ Yes | ✅ Full access |
+
+### Using a Bot Token (xoxb-)
+
+Bot tokens can be used without a cookie, but have limited functionality because Slack restricts the `search:read` scope to user tokens only.
+
+```bash
+python3 SlackPirate.py --token xoxb-your-bot-token
+```
+
+### Using a Client Token (xoxc-)
+
+For full functionality including message/file search, use a client token with the `d` cookie:
 
   * Provide the tool a `d` cookie by using the `--cookie` flag. The tool will output the associated Workspaces and tokens
   * Provide the tool with a token using the `--token` flag. You can find this by either using devtools or some other form of network monitoring, or by scraping the process memory of Slack for it. It starts with `xoxc-`
 
-Make sure to pass in both a token and a cookie - you need both to be able to authenticate
+```bash
+python3 SlackPirate.py --cookie <cookie> --token <xoxc-token>
+```
 
 ## Building
 
@@ -99,6 +120,8 @@ This will do the following:
   * Print to standard output for use in the next command
 
 ```python3 SlackPirate.py --token <token>```
+
+For bot tokens (`xoxb-`), no cookie is required. For client tokens (`xoxc-`), add `--cookie <cookie>`.
     
 This will do the following:
   * Check Token validity and only continue if Slack returns `True`
@@ -106,25 +129,29 @@ This will do the following:
   * Print to standard output if the tool found any @domains that can be used to register for the Slack Workspace (you may be surprised by what you find here - if you're lucky you'll find an old, unused, registerable domain here)
   * Dump team access logs in .json format if the token provided is a privileged token
   * Dump the user list in .json format
-  * Find references to S3 buckets
-  * Find references to passwords and other credentials
-  * Find references to AWS keys
-  * Find references to private keys
+  * Find references to S3 buckets (requires `search:read` scope - user tokens only)
+  * Find references to passwords and other credentials (requires `search:read` scope - user tokens only)
+  * Find references to AWS keys (requires `search:read` scope - user tokens only)
+  * Find references to private keys (requires `search:read` scope - user tokens only)
   * Find references to pinned messages across all Slack channels
-  * Find references to interesting URLs and links
-  * Lastly, the tool will attempt to download files based on pre-defined keywords
+  * Find references to interesting URLs and links (requires `search:read` scope - user tokens only)
+  * Lastly, the tool will attempt to download files based on pre-defined keywords (requires `search:read` scope - user tokens only)
 
-```python3 SlackPirate.py --token <token> --s3-scan```
+```python3 SlackPirate.py --token <token> --cloud-scan```
     
-  * This will instruct the tool to only run the S3 scan
+  * This will instruct the tool to only run the cloud storage (S3/Azure) scan
 
-```python3 SlackPirate.py --token <token> --no-s3-scan```
+```python3 SlackPirate.py --token <token> --no-cloud-scan```
     
-  * This will instruct the tool to run all scans apart from the S3 scan
+  * This will instruct the tool to run all scans apart from the cloud storage scan
   
 ```python3 SlackPirate.py --token <token> --verbose```
     
   * Verbose mode will output files in .CSV - will provide a lot more information such as channel names, usernames, perma-links and more.
+
+```python3 SlackPirate.py --token <token> --channel C01234567```
+    
+  * Filter all scans to a specific channel ID. Useful for targeting a specific channel or when your bot token only has access to certain channels.
 
 ## Screenshots
 
